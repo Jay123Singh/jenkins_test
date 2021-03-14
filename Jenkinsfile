@@ -1,4 +1,3 @@
-properties([pipelineTriggers([githubPush()])])
 pipeline {
 	agent any
 	//triggers {
@@ -12,11 +11,11 @@ pipeline {
     }
 
     stages {
+	   stages {
 	    stage('enable webhook'){
-		    steps{
-			    script{
-				   properties([pipelineTriggers([githubPush()])])     
-			    }    
+	  	    steps {
+			    script { properties([pipelineTriggers([githubPush()])])
+				   }
 		    }
 	    }
         stage('Build') {
