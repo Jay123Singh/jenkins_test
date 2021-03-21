@@ -1,25 +1,95 @@
-test
+Open Putty enter public Ip shared 3.237.24.1 port 22
+SSH >> Auth >> Browse provide the public key open
+login as $ centos
+$ sudo yum update >> Once complete // update latest version of OS
+$ sudo yum install java-1.8.0-openjdk-devel >> Enter y if asked // installed java
+$ sudo yum install wget // to get wget command installed
+$ sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo // getting Jenkins repo
+$ sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key //importing jenkins key
 
-test
-test
+$ sudo yum install jenkins // installing jenkins
 
-test
-test
+$ sudo systemctl start jenkins // starting jenkins
 
-testing poll scm
+$ sudo systemctl enable jenkins // Enabling Jenkins such that when server is started jenkins will auto start
+$ sudo systemctl status jenkins //to check jenkins is started and running 
+Open Browser and access Jenkins http://<your publicip>:8080 >> Eg: http://3.237.24.1:8080/ >> publicip amazon ip
+//https://app.slack.com/client/T01QL1Z6T44/C01R3MSUH16
+//https://github.com/Jay123Singh/jenkins_test
+//http://3.239.4.215:8080/
 
-testing webhook
+master: 3.239.4.215
+Slave : 3.239.18.163 
+https://app.slack.com/
 
-testing poll scm
+done123start123@gmail.com
 
-testing webhook
+Mummy0478@1986
 
-test
+jayanthsinghe@yahoo.com
+Mummy0478@1986
 
-testing webhook
+http://3.239.86.140:8080/
 
-Jayanth Singh added this line
-Jayanth Singh added this line testing pollscm
-To invoke pipeline.
+Windows Machine : ec2-3-92-251-98.compute-1.amazonaws.com
+User name : Administrator
+Password : &YlpNlaQG2Psbh?$-uk&Lc8&lDJlwPzY
 
 
+/var/lib/jenkins/secrets/initialAdminPassword >> Jenkins installed and pwd key stored
+
+$ sudo cat /var/lib/jenkins/secrets/initialAdminPassword // To get jenkins admin password
+
+Once logged in to the jenkins Url >> Click on install suggested jenkins plugin
+
+$ vi config.xml // To change configuration of jenkins in xml stored in disk
+$ systemctl restart jenkins // To restart jenkins or from UI reload from disk option in UI configure [ Dashboard Manage Jenkins ]
+
+echo " Testing Jenkins Training Hello world Free Style Project Sample"
+echo " String value provided to parameter is ${STRING}"
+sleep 300
+
+https://plugins.jenkins.io/
+
+$ sudo yum install git -y // To install git
+$ssh-keygen // To generate key
+$ cat /home/centos/.ssh/id_rsa // to get private key
+
+$  cat /home/centos/.ssh/id_rsa.pub // to get public key
+// To provide access to jenkins to pull from git
+
+//Oracle Account to download JDK
+sathishbob@gmail.com
+Jenkins@123
+//Publish Over SSH
+//Build Pipeline
+
+sudo su
+mkdir /var/lib/jenkins/testing
+wget https://chromedriver.storage.googleapis.com/88.0.4324.96/chromedriver_linux64.zip
+yum install unzip -y
+unzip chromedriver_linux64.zip -d /var/lib/jenkins/testing
+ls -l /var/lib/jenkins/testing/chromedriver
+chown -R jenkins.jenkins /var/lib/jenkins/testing/
+
+https://github.com/sathishbob/functional-testing
+
+sudo su // root
+
+wget https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm
+yum localinstall google-chrome-stable_current_x86_64.rpm
+
+System.setProperty("hudson.model.DirectoryBrowserSupport.CSP", "")
+
+systemctl start docker
+systemctl enable docker
+
+Docker HUB: 
+docker ps //list all the container
+docker images // to list all the images running
+docker run -d // to run container in the background
+docker run -d  -p 9000:9000 sonarqube(docker port : container port)
+
+7f8d33f4c63e1640db4b7748350e6342eb034954 //Jenkins tokens
+
+https://registry.terraform.io/search/providers?namespace=hashicorp
