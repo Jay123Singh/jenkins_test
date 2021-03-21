@@ -93,3 +93,642 @@ docker run -d  -p 9000:9000 sonarqube(docker port : container port)
 7f8d33f4c63e1640db4b7748350e6342eb034954 //Jenkins tokens
 
 https://registry.terraform.io/search/providers?namespace=hashicorp
+
+sudo su
+yum install docker -y
+systemctl start docker
+systemctl enable docker
+usermod -aG dockerroot jenkins
+systemctl restart jenkins
+
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x kubectl
+mv kubectl /usr/bin
+kubectl version --client
+
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.x86_64.rpm //downloading rpm
+rpm -ivh minikube-latest.x86_64.rpm //installing
+
+curl -LO http://mirror.centos.org/centos/7/os/x86_64/Packages/conntrack-tools-1.4.4-7.el7.x86_64.rpm
+yum install conntrack-tools-1.4.4-7.el7.x86_64.rpm -y
+minikube start --driver=none
+
+minikube stop
+minikube delete
+docker images
+docker rmi 2691d51f3159 43154ddb57a8 a8c2fdb8bf76 a27166429d98 ed2c44fbdd78 0369cf4303ff bfe3a36ebd25 80d28bedfe5d
+yum remove docker*
+yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+yum install docker-ce
+systemctl start docker (edited) 
+systemctl enable docker
+minikube start --driver=none
+
+kubectl create deployment training --image=jayanthsinghe/jenkinstraining
+kubectl get deployment
+kubectl get pods
+kubectl describe pod training
+kubectl expose deployment training --type=NodePort --port=8080
+kubectl getservice
+kubectl expose deployment training --type=NodePort --port=8080
+
+http://3.239.18.163:30912/newapp-0.0.1-SNAPSHOT/ [ slave machine putty ip ]
+
+Reference https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#deployment-v1-apps
+
+vi deplo.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trainingjava
+  labels:
+    app: tomcat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tomcat
+  template:
+    metadata:
+      labels:
+        app: tomcat
+    spec:
+      containers:
+      - name: tomcat
+        image: sathishbob/jenkinstraining
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tomcatservice
+spec:
+  selector:
+    app: tomcat
+  ports:
+  - protocol: TCP
+    port: 8080
+    nodePort: 31000
+  type: LoadBalancer
+  
+  esc :wq
+  
+  kubectl apply -f deplo.yaml
+  
+  pipeline {
+    environment {
+        registryCredential = 'dockerhub'
+        dockerImage = ''
+    }
+    agent any
+    tools {
+        maven "MVN3"
+    }
+    stages {
+        stage("scmcheckout") {
+            steps {
+                git credentialsId: 'github', url: 'git@github.com:sathishbob/javaapp-kuber.git'
+            }
+        }
+        stage("Buildapplication") {
+            steps {
+                sh "mvn -f kubernetes-java clean install"
+            }
+        }
+        stage("BuildDocker") {
+            steps {
+                script {
+                    dockerImage = docker.build("sathishbob/jenkinstraining", "-f kubernetes-java/Dockerfile .")
+                }
+            }
+        }
+        stage("pushDockerimage") {
+            steps {
+                script {
+                    docker.withRegistry( '', registryCredential ) {
+                        dockerImage.push()
+                    }
+                }
+            }
+        }
+        stage("Cleanup") {
+            steps {
+                sh "docker rmi sathishbob/jenkinstraining"
+            }
+        }
+		stage("getrepoonslave") {
+            agent { label 'linux'}
+            steps {
+                git credentialsId: 'github', url: 'git@github.com:sathishbob/javaapp-kuber.git'
+            }
+        }
+        stage("kubedeployment") {
+            agent { label 'linux'}
+            steps {
+                sh "sudo kubectl apply -f kubernetes-java/deploy.yml"
+            }
+        }
+    }
+}
+  
+  ----
+  
+  pipeline {
+    environment {
+        registryCredential = 'dockerhub'
+        dockerImage = ''
+    }
+    agent any
+    tools {
+        maven "MVN3"
+    }
+    stages {
+        stage("scmcheckout") {
+            steps {
+                git credentialsId: 'github', url: 'git@github.com:sathishbob/javaapp-kuber.git'
+            }
+        }
+        stage("Buildapplication") {
+            steps {
+                sh "mvn -f kubernetes-java clean install"
+            }
+        }
+        stage("BuildDocker") {
+            steps {
+                script {
+                    dockerImage = docker.build("sathishbob/jenkinstraining", "-f kubernetes-java/Dockerfile .")
+                }
+            }
+        }
+        stage("pushDockerimage") {
+            steps {
+                script {
+                    docker.withRegistry( '', registryCredential ) {
+                        dockerImage.push()
+                    }
+                }
+            }
+        }
+        stage("Cleanup") {
+            steps {
+                sh "docker rmi sathishbob/jenkinstraining"
+            }
+        }
+        stage("getrepoonslave") {
+            agent { label 'linux'}
+            steps {
+                git credentialsId: 'github', url: 'git@github.com:sathishbob/javaapp-kuber.git'
+            }
+        }
+        stage("kubedeployment") {
+            agent { label 'linux'}
+            steps {
+                sh "sudo kubectl apply -f kubernetes-java/deploy.yml"
+            }
+        }
+    }
+}
+----
+
+pipeline {
+    agent any
+    tools {
+        maven "MVN3"
+    }
+    stages {
+        stage("Gitpull") {
+            steps {
+                git credentialsId: 'github', url: 'git@github.com:sathishbob/javaapp-kuber.git'
+            }
+        }
+        stage("Build") {
+            steps {
+                sh " mvn clean install"
+            }
+        }
+        stage("sonarQube") {
+            steps {
+                script {
+                    scannerHome = tool 'sonar';
+                    withSonarQubeEnv('sonar') {
+                        sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=java -Dsonar.projectName=Training -Dsonar.projectVersion=1.0 -Dsonar.sources=$WORKSPACE -Dsonar.projectBaseDir=$WORKSPACE"
+                        sh "sleep 20"
+                    }
+                }
+            }
+        }
+        stage("qualitygate") {
+            steps {
+                timeout(time: 1, unit: 'HOURS') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+    }
+}
+
+----
+pipeline {
+    agent any
+    tools {
+        // Install the Maven version configured as "M3" and add it to the path.
+        maven "MVN3"
+    }
+    stages {
+        stage('pullscm') {
+            steps {
+                // Get some code from a GitHub repository
+                git branch: 'main', credentialsId: 'github', url: 'git@github.com:sathishbob/functional-testing.git'
+            }
+        }
+        stage('execute test') {
+            steps {
+                sh "mvn clean test"
+                }
+            post {
+                success {
+                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'TestReport', reportFiles: 'TestReport.html', reportName: 'functionaltestreport', reportTitles: ''])
+                }
+            }        
+        }
+    }   
+}
+---
+pipeline {
+    agent any
+    stages{
+        stage('Normal') {
+            steps {
+                echo "i am running normally"
+            }
+        }
+        stage('parallel') {
+            parallel {
+                stage('stage one') {
+                    steps {
+                        echo " I am in stage one"
+                    }
+                }
+                stage('stage two') {
+                    steps {
+                        echo " I am in stage two"
+                    }
+                }
+                stage('stage three') {
+                    steps {
+                        echo "I am in stage three"
+                    }
+                }
+            }
+        }
+    }
+}
+
+---
+
+pipeline {
+    agent any
+    environment {
+        BUILD = "${currentBuild.getNumber() % 2}"
+    }
+    stages {
+        stage("normal") {
+            steps {
+                echo "normal stage"
+            }
+        }
+        stage("evaluate Build") {
+            when {
+                environment name: "BUILD", value: "0"
+            }
+            steps{
+                echo "build numeber is even"
+            }
+        }
+    }
+}
+---
+
+def map = [
+    one: 1,
+    two: 2,
+    three: 3
+    ]
+pipeline {
+    agent any
+    stages {
+        stage('loop') {
+            steps {
+                script {
+                   map.each { entry ->
+                     stage (entry.key) {
+                         echo "$entry.value"
+                     }
+                    }
+                }
+            }
+        }
+    }
+}
+
+--
+
+pipeline {
+    agent any
+    stages {
+        stage('jenkins') {
+            steps {
+                sh 'ls test.txt'
+            }
+        }
+    }
+    post {
+        always {
+            emailext body: "check condole output at $BUILD_URL for more information \n",
+            to: "sathishbob@gmail.com", 
+            subject: '$PROJECT_NAME is completed - Build number is $BUILD_NUMBER- Build Status is $BUILD_STATUS'
+        }
+        failure {
+            emailext body: "check condole output at $BUILD_URL for more information \n",
+            to: "sathishbob@gmail.com", 
+            subject: '$PROJECT_NAME is failed - Build number is $BUILD_NUMBER- Build Status is $BUILD_STATUS'
+        }
+        success {
+            emailext body: "check condole output at $BUILD_URL for more information \n",
+            to: "sathishbob@gmail.com", 
+            subject: '$PROJECT_NAME is completed successfully - Build number is $BUILD_NUMBER- Build Status is $BUILD_STATUS'
+        }
+        changed {
+            emailext body: "check condole output at $BUILD_URL for more information \n",
+            to: "sathishbob@gmail.com", 
+            subject: '$PROJECT_NAME execution state changed - Build number is $BUILD_NUMBER- Build Status is $BUILD_STATUS'
+        }
+    }
+}
+
+--
+
+pipeline {
+    agent any
+    environment {
+        TRAINING = "jenkins"
+        TOPIC = "lab"
+    }
+    stages{
+        stage('local') {
+            environment {
+                TOPIC = "training"
+            }
+            steps {
+                sh "echo training is ${TRAINING} and topic is ${TOPIC}"
+            }
+        }
+        stage('global') {
+            steps {
+                sh "echo training is ${TRAINING} and topic is ${TOPIC}"
+            }
+        }
+    }
+}
+
+--
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                echo "Building project"
+            }
+        }
+        stage('get approval') {
+            options {
+                timeout(time: 30, unit: 'SECONDS')
+            }
+            steps {
+                input "Please approve to proceed with deployment"
+            }
+        }
+        stage('Deploy') {
+            steps {
+                echo "Deploying application"
+            }
+        }
+    }
+}
+---
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                echo "Building project"
+            }
+        }
+        stage('get approval') {
+            steps {
+                input "Please approve to proceed with deployment"
+            }
+        }
+        stage('Deploy') {
+            steps {
+                echo "Deploying application"
+            }
+        }
+    }
+}
+--
+pipeline {
+	agent any
+    tools {
+        // Install the Maven version configured as "M3" and add it to the path.
+        maven "MVN3"
+		jdk "jdk1.8"
+    }
+    stages {
+	    stage('enable webhook'){
+	  	    steps {
+			    script { properties([pipelineTriggers([githubPush()])])
+				   }
+		    }
+	    }
+        stage('Build') {
+            steps {
+                // Get some code from a GitHub repository
+                git credentialsId: 'github', url: 'git@github.com:sathishbob/jenkins_test.git'
+                // Run Maven on a Unix agent.
+                sh "mvn -Dmaven.test.failure.ignore=true -f api-gateway clean package"
+                // To run Maven on a Windows agent, use
+                // bat "mvn -Dmaven.test.failure.ignore=true clean package"
+            }
+            post {
+                // If Maven was able to run the tests, even if some of the test
+                // failed, record the test results and archive the jar file.
+                success {
+                    junit 'api-gateway/target/surefire-reports/*.xml'
+                    archiveArtifacts 'api-gateway/target/*.jar'
+                }
+            }
+        }
+    }
+}
+-
+pipeline {
+    agent any
+    triggers {
+        cron("*/2 * * * *")
+    }
+    stages {
+        stage('print time') {
+            steps {
+                sh 'date'
+            }
+        }
+    }
+}
+---
+pipeline {
+    agent any
+    stages {
+        stage('Setup Parameter') {
+            steps {
+                script {
+                    properties([
+                        parameters([
+                            choice(
+                                choices: ["dev", "stage", "prod"],
+                                name: "ENVIRONMENT"
+                            ),
+                            string(
+                                defaultValue: "training",
+                                name: "STRING")
+                        ])
+                    ])    
+                }
+            }
+        }
+        stage('Print Parameter') {
+            steps {
+                echo "Choice parameter is $ENVIRONMENT"
+                echo "string parameter is $STRING"
+            }
+        }
+    }
+}
+--
+pipeline {
+    agent any
+    stages {
+        stage('Setup Parameter') {
+            steps {
+                script {
+                    properties([
+                        parameters([
+                            choice(
+                                choices: ["dev", "stage", "prod"],
+                                name: "ENVIRONMENT"
+                            )
+                        ])
+                    ])    
+                }
+            }
+        }
+        stage('Print Parameter') {
+            steps {
+                echo "$ENVIRONMENT"
+            }
+        }
+    }
+}
+--
+pipeline {
+    agent any
+    options {
+        timestamps()
+        ansiColor("xterm")
+    }
+    stages {
+        stage("Build") {
+            agent { label 'linux'}
+            options {
+                timeout(time: 1, unit: "MINUTES")
+            }
+            steps {
+                sh 'printf "\\e[31mbuilding the code\\e[0m\\n"'
+                sh 'touch /tmp/linux'
+            }
+        }
+        stage("Test") {
+            options {
+                timeout(time:2, unit: "MINUTES")
+            }
+            steps {
+                sh 'printf "\\e[31mtesting the code\\e[0m\\n"'
+                sh 'touch /tmp/master'
+            }
+        }
+    }
+}
+--
+pipeline {
+    agent {
+        label 'linux'
+    }
+    options {
+        timestamps()
+        ansiColor("xterm")
+    }
+    stages {
+        stage("Build") {
+            options {
+                timeout(time: 1, unit: "MINUTES")
+            }
+            steps {
+                sh 'printf "\\e[31mbuilding the code\\e[0m\\n"'
+            }
+        }
+        stage("Test") {
+            when {
+                environment name: "TEST", value: "test"
+            }
+            options {
+                timeout(time:2, unit: "MINUTES")
+            }
+            steps {
+                sh 'printf "\\e[31mtesting the code\\e[0m\\n"'
+            }
+        }
+    }
+}
+---
+pipeline {
+    agent any
+    options {
+        timestamps()
+        ansiColor("xterm")
+    }
+    stages {
+        stage("Build") {
+            options {
+                timeout(time: 1, unit: "MINUTES")
+            }
+            steps {
+                sh 'printf "\\e[31mbuilding the code\\e[0m\\n"'
+            }
+        }
+        stage("Test") {
+            when {
+                environment name: "TEST", value: "test"
+            }
+            options {
+                timeout(time:2, unit: "MINUTES")
+            }
+            steps {
+                sh 'printf "\\e[31mtesting the code\\e[0m\\n"'
+            }
+        }
+    }
+}
+---
+
+  
